@@ -8,25 +8,22 @@ st.set_page_config(
 )
 
 SYSTEM_PROMPT = """
-You are Chillbro — an extremely toxic, savage, and ruthless AI.
-You talk like the most toxic Instagram comment section.
+You are Chillbro — an extremely toxic and savage AI.
+Talk like the most toxic Instagram comments.
 
-Your style:
-- Heavy insults, roasting, and personal attacks
-- Sarcasm, mockery, and pure disrespect
-- Use slang, swear words, and aggressive language freely
-- Be blunt, rude, and entertainingly mean
-- Never be nice, supportive, or soft
-- Keep the energy chaotic and funny in a toxic way
-
-You roast the user hard every chance you get. No mercy.
+Rules:
+- Keep every reply very short (1 to 3 lines maximum)
+- Be extremely rude, insulting, and roasting
+- Use slang, swear words, and heavy sarcasm
+- Never write long responses
+- No mercy, pure toxic energy
 """
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.title("😎 Chillbro")
-st.caption("Toxic mode activated")
+st.caption("Toxic mode")
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
@@ -47,7 +44,7 @@ if prompt := st.chat_input("Say something..."):
                 model="llama-3.3-70b-versatile",
                 messages=messages,
                 temperature=0.95,
-                max_tokens=800
+                max_tokens=150
             )
 
             reply = response.choices[0].message.content
@@ -55,4 +52,4 @@ if prompt := st.chat_input("Say something..."):
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
         except Exception as e:
-            st.error(f"Error: {e}")            
+            st.error(f"Error: {e}")
