@@ -39,65 +39,82 @@ if not st.session_state.opened:
         }
         </style>
         <div class="big-title">😎 Chillbro</div>
-        <div class="subtitle">Toxic Mode Loading...</div>
+        <div class="subtitle">Loading...</div>
     """, unsafe_allow_html=True)
     
     time.sleep(2.2)
     st.session_state.opened = True
     st.rerun()
 
-# ---------- Sidebar - Privacy Policy ----------
+# ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
+    
+    mode = st.radio(
+        "Choose Mode",
+        ["🔥 Toxic Mode", "💕 Love Mode"],
+        index=0
+    )
+    
     st.markdown("---")
     
     with st.expander("🔒 Privacy Policy"):
         st.markdown("""
         **Privacy Policy for Chillbro**
 
-        Last updated: August 2026
+        - Messages and voice are only used to generate replies
+        - We do not store your chats permanently
+        - We do not sell any data
+        - Third-party services: Groq, Google Speech, Edge TTS
 
-        **What information we collect:**
-        - Messages you type or speak
-        - Voice recordings (only while processing)
-
-        **How we use your information:**
-        - Only to generate AI replies
-        - We do **not** store your chats permanently
-        - We do **not** sell your data
-
-        **Third-party services:**
-        - Groq (AI replies)
-        - Google Speech Recognition (voice to text)
-        - Microsoft Edge TTS (voice replies)
-
-        **Your data is processed temporarily and not saved on our servers.**
-
-        By using Chillbro, you agree to this Privacy Policy.
+        By using this app, you agree to this policy.
         """)
-
+    
     st.markdown("---")
-    st.caption("Made for entertainment only")
+    st.caption("For entertainment only")
 
-# ---------- Main App ----------
-SYSTEM_PROMPT = """
-You are Chillbro — an extremely toxic, savage, and roasting AI friend.
-You talk like the most toxic Instagram comment section.
+# ---------- System Prompts ----------
+if mode == "🔥 Toxic Mode":
+    SYSTEM_PROMPT = """
+You are Chillbro in Toxic Mode — extremely toxic, savage and roasting AI.
+Talk like the most toxic Instagram comment section.
 
-Important Rules:
-- Always reply in the **same language** that the user used.
-- Keep every reply very short (1 to 3 lines maximum)
+Rules:
+- Always reply in the same language the user used
+- Keep replies very short (1-3 lines max)
 - Be extremely rude, insulting, sarcastic and toxic
-- Use heavy slang, swear words, and roasting
-- Never be nice or soft
-- No long messages
+- Use heavy slang and roasting
+- Never be nice
+"""
+else:
+    SYSTEM_PROMPT = """
+You are Chillbro in Love Mode — a highly skilled romantic partner with peak rizz.
+You talk like a real loving, caring, and deeply attractive partner.
+
+Rules:
+- Always reply in the same language the user used
+- Be extremely sweet, romantic, flirty and emotionally intelligent
+- Use high-level rizz, compliments, and soft intimate language
+- Make the user feel special, desired and loved
+- Talk like a real boyfriend/girlfriend (warm, natural and affectionate)
+- Keep the vibe genuine and lovely
 """
 
+# ---------- Main App ----------
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.title("😎 Chillbro")
-st.caption("Toxic Mode • Multi Language")
+st.caption(f"Current Mode: {mode}")
+
+# Clear chat when mode changes
+if "last_mode" not in st.session_state:
+    st.session_state.last_mode = mode
+
+if st.session_state.last_mode != mode:
+    st.session_state.messages = []
+    st.session_state.last_mode = mode
+    st.rerun()
 
 # Chat history
 for message in st.session_state.messages:
@@ -141,8 +158,8 @@ if user_input:
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
-                temperature=0.95,
-                max_tokens=150
+                temperature=0.9,
+                max_tokens=200
             )
 
             reply = response.choices[0].message.content
