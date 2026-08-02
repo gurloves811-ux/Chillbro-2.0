@@ -46,6 +46,39 @@ if not st.session_state.opened:
     st.session_state.opened = True
     st.rerun()
 
+# ---------- Sidebar - Privacy Policy ----------
+with st.sidebar:
+    st.title("😎 Chillbro")
+    st.markdown("---")
+    
+    with st.expander("🔒 Privacy Policy"):
+        st.markdown("""
+        **Privacy Policy for Chillbro**
+
+        Last updated: August 2026
+
+        **What information we collect:**
+        - Messages you type or speak
+        - Voice recordings (only while processing)
+
+        **How we use your information:**
+        - Only to generate AI replies
+        - We do **not** store your chats permanently
+        - We do **not** sell your data
+
+        **Third-party services:**
+        - Groq (AI replies)
+        - Google Speech Recognition (voice to text)
+        - Microsoft Edge TTS (voice replies)
+
+        **Your data is processed temporarily and not saved on our servers.**
+
+        By using Chillbro, you agree to this Privacy Policy.
+        """)
+
+    st.markdown("---")
+    st.caption("Made for entertainment only")
+
 # ---------- Main App ----------
 SYSTEM_PROMPT = """
 You are Chillbro — an extremely toxic, savage, and roasting AI friend.
@@ -83,7 +116,6 @@ if audio_bytes:
         recognizer = sr.Recognizer()
         with sr.AudioFile(BytesIO(audio_bytes)) as source:
             audio_data = recognizer.record(source)
-            # Trying Hindi + English (you can change later)
             user_input = recognizer.recognize_google(audio_data, language="hi-IN")
             st.success(f"You said: {user_input}")
     except:
@@ -117,7 +149,7 @@ if user_input:
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
-            # Voice (currently Hindi male - we can improve later)
+            # Voice
             async def generate_voice():
                 communicate = edge_tts.Communicate(reply, "hi-IN-MadhurNeural")
                 audio_data = b""
