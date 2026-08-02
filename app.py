@@ -5,9 +5,48 @@ import asyncio
 from audio_recorder_streamlit import audio_recorder
 import speech_recognition as sr
 from io import BytesIO
+import time
 
 st.set_page_config(page_title="Chillbro", page_icon="😎", layout="centered")
 
+# ---------- Opening Animation ----------
+if "opened" not in st.session_state:
+    st.session_state.opened = False
+
+if not st.session_state.opened:
+    st.markdown("""
+        <style>
+        .big-title {
+            font-size: 60px;
+            font-weight: bold;
+            text-align: center;
+            color: #ff4b4b;
+            animation: zoomIn 1.2s ease;
+        }
+        .subtitle {
+            text-align: center;
+            font-size: 22px;
+            color: #aaaaaa;
+            animation: fadeIn 2s ease;
+        }
+        @keyframes zoomIn {
+            from { transform: scale(0.3); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        </style>
+        <div class="big-title">😎 Chillbro</div>
+        <div class="subtitle">Toxic Mode Loading...</div>
+    """, unsafe_allow_html=True)
+    
+    time.sleep(2.2)
+    st.session_state.opened = True
+    st.rerun()
+
+# ---------- Main App ----------
 SYSTEM_PROMPT = """
 तुम Chillbro हो — एक बहुत ज्यादा toxic और savage AI दोस्त।
 तुम Instagram comments जितना toxic बोलते हो।
@@ -76,9 +115,9 @@ if user_input:
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
-            # ---------- Hindi Male Voice ----------
+            # Hindi Male Voice
             async def generate_voice():
-                communicate = edge_tts.Communicate(reply, "hi-IN-MadhurNeural")  # Hindi Male Voice
+                communicate = edge_tts.Communicate(reply, "hi-IN-MadhurNeural")
                 audio_data = b""
                 async for chunk in communicate.stream():
                     if chunk["type"] == "audio":
