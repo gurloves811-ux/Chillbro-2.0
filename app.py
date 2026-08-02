@@ -71,6 +71,12 @@ VOICE_OPTIONS = {
     "Marathi": "mr-IN-ManoharNeural"
 }
 
+# ---------- Initialize separate chats ----------
+if "toxic_messages" not in st.session_state:
+    st.session_state.toxic_messages = []
+if "love_messages" not in st.session_state:
+    st.session_state.love_messages = []
+
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
@@ -81,14 +87,19 @@ with st.sidebar:
     st.markdown("---")
     st.subheader("Chat History")
     
-    if st.button("🗑️ Clear Chat", use_container_width=True):
-        st.session_state.messages = []
+    if st.button("🗑️ Clear Current Chat", use_container_width=True):
+        if mode == "🔥 Toxic Mode":
+            st.session_state.toxic_messages = []
+        else:
+            st.session_state.love_messages = []
         st.rerun()
     
-    if "messages" in st.session_state and len(st.session_state.messages) > 0:
-        chat_json = json.dumps(st.session_state.messages, ensure_ascii=False, indent=2)
+    # Save current mode chat
+    current_messages = st.session_state.toxic_messages if mode == "🔥 Toxic Mode" else st.session_state.love_messages
+    if len(current_messages) > 0:
+        chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
         st.download_button(
-            label="💾 Save Chat",
+            label="💾 Save Current Chat",
             data=chat_json,
             file_name="chillbro_chat.json",
             mime="application/json",
@@ -99,7 +110,10 @@ with st.sidebar:
     if uploaded_file is not None:
         try:
             loaded_messages = json.load(uploaded_file)
-            st.session_state.messages = loaded_messages
+            if mode == "🔥 Toxic Mode":
+                st.session_state.toxic_messages = loaded_messages
+            else:
+                st.session_state.love_messages = loaded_messages
             st.success("Chat loaded!")
             time.sleep(0.5)
             st.rerun()
@@ -116,7 +130,7 @@ with st.sidebar:
         - For entertainment only
         """)
     
-    st.caption("Save your chat to keep history")
+    st.caption("Each mode has separate chat")
 
 # ---------- System Prompts ----------
 if mode == "🔥 Toxic Mode":
@@ -131,6 +145,7 @@ Rules:
 - Use heavy slang and roasting
 - Never be nice
 """
+    messages = st.session_state.toxic_messages
 else:
     SYSTEM_PROMPT = """
 You are Chillbro in Love Mode — a real romantic partner with peak rizz.
@@ -143,16 +158,14 @@ Rules:
 - Make the user feel special and desired
 - Sound realistic, not over-dramatic
 """
+    messages = st.session_state.love_messages
 
 # ---------- Main App ----------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 st.title("😎 Chillbro")
 st.caption(f"Mode: {mode} | Voice: {selected_voice}")
 
-# Show messages (Chat will NOT clear when switching modes)
-for message in st.session_state.messages:
+# Show messages of current mode
+for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
@@ -180,7 +193,7 @@ if text_input:
 
 # ---------- Generate Reply ----------
 if user_input:
-    st.session_state.messages.append({"role": "user", "content": user_input})
+    messages.append({"role": "user", "content": user_input})
     
     with st.chat_message("user"):
         st.markdown(user_input)
@@ -188,18 +201,18 @@ if user_input:
     with st.chat_message("assistant"):
         try:
             client = Groq(api_key=st.secrets["GROQ_API_KEY"])
-            messages = [{"role": "system", "content": SYSTEM_PROMPT}] + st.session_state.messages
+            full_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
 
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
-                messages=messages,
+                messages=full_messages,
                 temperature=0.9,
                 max_tokens=150
             )
 
             reply = response.choices[0].message.content
             st.markdown(reply)
-            st.session_state.messages.append({"role": "assistant", "content": reply})
+            messages.append({"role": "assistant", "content": reply})
 
             # Voice
             voice_id = VOICE_OPTIONS[selected_voice]
