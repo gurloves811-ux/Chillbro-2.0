@@ -151,16 +151,7 @@ if "messages" not in st.session_state:
 st.title("😎 Chillbro")
 st.caption(f"Mode: {mode} | Voice: {selected_voice}")
 
-# Clear chat when mode changes
-if "last_mode" not in st.session_state:
-    st.session_state.last_mode = mode
-
-if st.session_state.last_mode != mode:
-    st.session_state.messages = []
-    st.session_state.last_mode = mode
-    st.rerun()
-
-# Show messages
+# Show messages (Chat will NOT clear when switching modes)
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
