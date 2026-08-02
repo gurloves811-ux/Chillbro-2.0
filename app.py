@@ -48,22 +48,23 @@ if not st.session_state.opened:
 
 # ---------- Main App ----------
 SYSTEM_PROMPT = """
-तुम Chillbro हो — एक बहुत ज्यादा toxic और savage AI दोस्त।
-तुम Instagram comments जितना toxic बोलते हो।
+You are Chillbro — an extremely toxic, savage, and roasting AI friend.
+You talk like the most toxic Instagram comment section.
 
-Rules:
-- हर reply बहुत छोटा रखो (1 से 3 लाइन अधिकतम)
-- बहुत ज्यादा गाली-गलौज, roast और sarcasm इस्तेमाल करो
-- पूरा reply हिंदी में दो (थोड़ा Hinglish चल सकता है)
-- लंबा मत लिखो
-- बिल्कुल भी अच्छा या soft मत बनो
+Important Rules:
+- Always reply in the **same language** that the user used.
+- Keep every reply very short (1 to 3 lines maximum)
+- Be extremely rude, insulting, sarcastic and toxic
+- Use heavy slang, swear words, and roasting
+- Never be nice or soft
+- No long messages
 """
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.title("😎 Chillbro")
-st.caption("Toxic Hindi Mode")
+st.caption("Toxic Mode • Multi Language")
 
 # Chat history
 for message in st.session_state.messages:
@@ -71,7 +72,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 # ---------- Voice Input ----------
-st.write("बोलो:")
+st.write("Speak:")
 audio_bytes = audio_recorder(pause_threshold=1.5, sample_rate=16000)
 
 user_input = None
@@ -82,13 +83,14 @@ if audio_bytes:
         recognizer = sr.Recognizer()
         with sr.AudioFile(BytesIO(audio_bytes)) as source:
             audio_data = recognizer.record(source)
+            # Trying Hindi + English (you can change later)
             user_input = recognizer.recognize_google(audio_data, language="hi-IN")
-            st.success(f"तुमने कहा: {user_input}")
+            st.success(f"You said: {user_input}")
     except:
-        st.error("आवाज़ समझ नहीं आई। दोबारा बोलो।")
+        st.error("Could not understand. Try again.")
 
 # ---------- Text Input ----------
-text_input = st.chat_input("या यहाँ लिखो...")
+text_input = st.chat_input("Type in any language...")
 if text_input:
     user_input = text_input
 
@@ -115,7 +117,7 @@ if user_input:
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
-            # Hindi Male Voice
+            # Voice (currently Hindi male - we can improve later)
             async def generate_voice():
                 communicate = edge_tts.Communicate(reply, "hi-IN-MadhurNeural")
                 audio_data = b""
