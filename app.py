@@ -6,6 +6,8 @@ from audio_recorder_streamlit import audio_recorder
 import speech_recognition as sr
 from io import BytesIO
 import time
+import json
+from streamlit_js_eval import streamlit_js_eval, get_from_local_storage, set_to_local_storage
 
 st.set_page_config(page_title="Chillbro", page_icon="😎", layout="centered")
 
@@ -46,98 +48,66 @@ if not st.session_state.opened:
     st.session_state.opened = True
     st.rerun()
 
-# ---------- Maximum Stable Voices ----------
+# ---------- Voices ----------
 VOICE_OPTIONS = {
     "Hindi": "hi-IN-MadhurNeural",
     "English (US)": "en-US-GuyNeural",
     "English (UK)": "en-GB-RyanNeural",
     "English (India)": "en-IN-PrabhatNeural",
-    "English (Australia)": "en-AU-WilliamNeural",
-    "Spanish (Spain)": "es-ES-AlvaroNeural",
     "Spanish (Mexico)": "es-MX-JorgeNeural",
     "French": "fr-FR-HenriNeural",
     "German": "de-DE-ConradNeural",
     "Arabic": "ar-SA-HamedNeural",
     "Portuguese (Brazil)": "pt-BR-AntonioNeural",
-    "Portuguese (Portugal)": "pt-PT-DuarteNeural",
     "Italian": "it-IT-DiegoNeural",
     "Japanese": "ja-JP-KeitaNeural",
     "Korean": "ko-KR-InJoonNeural",
-    "Chinese (Mandarin)": "zh-CN-YunxiNeural",
+    "Chinese": "zh-CN-YunxiNeural",
     "Russian": "ru-RU-DmitryNeural",
     "Turkish": "tr-TR-AhmetNeural",
-    "Dutch": "nl-NL-MaartenNeural",
-    "Polish": "pl-PL-MarekNeural",
-    "Indonesian": "id-ID-ArdiNeural",
-    "Vietnamese": "vi-VN-NamMinhNeural",
-    "Thai": "th-TH-NiwatNeural",
-    "Swedish": "sv-SE-MattiasNeural",
-    "Greek": "el-GR-NestorasNeural",
-    "Czech": "cs-CZ-AntoninNeural",
-    "Romanian": "ro-RO-EmilNeural",
-    "Hungarian": "hu-HU-TamasNeural",
-    "Finnish": "fi-FI-HarriNeural",
-    "Danish": "da-DK-JonNeural",
-    "Norwegian": "nb-NO-FinnNeural",
-    "Ukrainian": "uk-UA-OstapNeural",
-    "Hebrew": "he-IL-AvriNeural",
-    "Catalan": "ca-ES-EnricNeural",
-    "Croatian": "hr-HR-SreckoNeural",
-    "Slovak": "sk-SK-LukasNeural",
-    "Bulgarian": "bg-BG-BorislavNeural",
-    "Malay": "ms-MY-OsmanNeural",
-    "Filipino": "fil-PH-AngeloNeural",
     "Urdu": "ur-PK-AsadNeural",
     "Bengali": "bn-IN-BashkarNeural",
     "Tamil": "ta-IN-ValluvarNeural",
     "Telugu": "te-IN-MohanNeural",
-    "Marathi": "mr-IN-ManoharNeural",
-    "Gujarati": "gu-IN-NiranjanNeural",
-    "Kannada": "kn-IN-GaganNeural",
-    "Malayalam": "ml-IN-MidhunNeural",
-    "Punjabi": "pa-IN-VaaniNeural",
-    "Afrikaans": "af-ZA-WillemNeural",
-    "Swahili": "sw-KE-RafikiNeural",
-    "Irish": "ga-IE-ColmNeural",
-    "Welsh": "cy-GB-AledNeural",
-    "Basque": "eu-ES-AnderNeural",
-    "Galician": "gl-ES-SantiNeural",
-    "Icelandic": "is-IS-GunnarNeural",
-    "Latvian": "lv-LV-NilsNeural",
-    "Lithuanian": "lt-LT-LeonasNeural",
-    "Estonian": "et-EE-KertNeural",
-    "Slovenian": "sl-SI-RokNeural",
-    "Serbian": "sr-RS-NicholasNeural",
-    "Macedonian": "mk-MK-AleksandarNeural",
-    "Albanian": "sq-AL-IlirNeural",
-    "Georgian": "ka-GE-GiorgiNeural",
-    "Armenian": "hy-AM-DavitNeural",
-    "Azerbaijani": "az-AZ-BabekNeural",
-    "Kazakh": "kk-KZ-DauletNeural",
-    "Uzbek": "uz-UZ-SardorNeural",
-    "Mongolian": "mn-MN-BataaNeural"
+    "Marathi": "mr-IN-ManoharNeural"
 }
+
+# ---------- Load Chat from Local Storage ----------
+if "messages" not in st.session_state:
+    stored_chat = get_from_local_storage("chillbro_chat")
+    if stored_chat:
+        try:
+            st.session_state.messages = json.loads(stored_chat)
+        except:
+            st.session_state.messages = []
+    else:
+        st.session_state.messages = []
 
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
     
     mode = st.radio("Choose Mode", ["🔥 Toxic Mode", "💕 Love Mode"], index=0)
-    
     selected_voice = st.selectbox("Voice Language", list(VOICE_OPTIONS.keys()), index=0)
+    
+    st.markdown("---")
+    
+    if st.button("🗑️ Clear Chat", use_container_width=True):
+        st.session_state.messages = []
+        set_to_local_storage("chillbro_chat", "[]")
+        st.rerun()
     
     st.markdown("---")
     
     with st.expander("🔒 Privacy Policy"):
         st.markdown("""
-        **Privacy Policy for Chillbro**
-        - Messages and voice are only used to generate replies
-        - We do not store your chats permanently
-        - We do not sell any data
-        - Third-party services: Groq, Google Speech, Edge TTS
+        **Privacy Policy**
+        - Chats are saved only in your browser
+        - We do not store your data on any server
+        - For entertainment only
         """)
     
-    st.caption("For entertainment only")
+    st.caption("History stays after refresh")
 
 # ---------- System Prompts ----------
 if mode == "🔥 Toxic Mode":
@@ -162,29 +132,29 @@ Rules:
 - Talk like a real boyfriend/girlfriend (natural, warm and flirty)
 - Use high-level rizz, soft compliments and affectionate language
 - Make the user feel special and desired
-- Do not write long paragraphs
 - Sound realistic, not over-dramatic
 """
 
 # ---------- Main App ----------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
 st.title("😎 Chillbro")
 st.caption(f"Mode: {mode} | Voice: {selected_voice}")
 
+# Clear when mode changes
 if "last_mode" not in st.session_state:
     st.session_state.last_mode = mode
 
 if st.session_state.last_mode != mode:
     st.session_state.messages = []
+    set_to_local_storage("chillbro_chat", "[]")
     st.session_state.last_mode = mode
     st.rerun()
 
+# Show chat
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
+# ---------- Voice Input ----------
 st.write("Speak:")
 audio_bytes = audio_recorder(pause_threshold=1.5, sample_rate=16000)
 
@@ -201,10 +171,12 @@ if audio_bytes:
     except:
         st.error("Could not understand. Try again.")
 
+# ---------- Text Input ----------
 text_input = st.chat_input("Type in any language...")
 if text_input:
     user_input = text_input
 
+# ---------- Generate Reply ----------
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     
@@ -227,6 +199,10 @@ if user_input:
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
+            # Save to Local Storage
+            set_to_local_storage("chillbro_chat", json.dumps(st.session_state.messages))
+
+            # Voice
             voice_id = VOICE_OPTIONS[selected_voice]
 
             async def generate_voice():
