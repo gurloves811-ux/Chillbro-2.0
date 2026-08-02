@@ -7,7 +7,6 @@ import speech_recognition as sr
 from io import BytesIO
 import time
 import json
-from streamlit_js_eval import streamlit_js_eval, get_from_local_storage, set_to_local_storage
 
 st.set_page_config(page_title="Chillbro", page_icon="😎", layout="centered")
 
@@ -72,17 +71,6 @@ VOICE_OPTIONS = {
     "Marathi": "mr-IN-ManoharNeural"
 }
 
-# ---------- Load Chat from Local Storage ----------
-if "messages" not in st.session_state:
-    stored_chat = get_from_local_storage("chillbro_chat")
-    if stored_chat:
-        try:
-            st.session_state.messages = json.loads(stored_chat)
-        except:
-            st.session_state.messages = []
-    else:
-        st.session_state.messages = []
-
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
@@ -91,23 +79,44 @@ with st.sidebar:
     selected_voice = st.selectbox("Voice Language", list(VOICE_OPTIONS.keys()), index=0)
     
     st.markdown("---")
+    st.subheader("Chat History")
     
     if st.button("🗑️ Clear Chat", use_container_width=True):
         st.session_state.messages = []
-        set_to_local_storage("chillbro_chat", "[]")
         st.rerun()
+    
+    if "messages" in st.session_state and len(st.session_state.messages) > 0:
+        chat_json = json.dumps(st.session_state.messages, ensure_ascii=False, indent=2)
+        st.download_button(
+            label="💾 Save Chat",
+            data=chat_json,
+            file_name="chillbro_chat.json",
+            mime="application/json",
+            use_container_width=True
+        )
+    
+    uploaded_file = st.file_uploader("📂 Load Chat", type="json")
+    if uploaded_file is not None:
+        try:
+            loaded_messages = json.load(uploaded_file)
+            st.session_state.messages = loaded_messages
+            st.success("Chat loaded!")
+            time.sleep(0.5)
+            st.rerun()
+        except:
+            st.error("Failed to load file.")
     
     st.markdown("---")
     
     with st.expander("🔒 Privacy Policy"):
         st.markdown("""
         **Privacy Policy**
-        - Chats are saved only in your browser
-        - We do not store your data on any server
+        - Messages are only used to generate replies
+        - We do not store your chats on any server
         - For entertainment only
         """)
     
-    st.caption("History stays after refresh")
+    st.caption("Save your chat to keep history")
 
 # ---------- System Prompts ----------
 if mode == "🔥 Toxic Mode":
@@ -136,20 +145,22 @@ Rules:
 """
 
 # ---------- Main App ----------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
+
 st.title("😎 Chillbro")
 st.caption(f"Mode: {mode} | Voice: {selected_voice}")
 
-# Clear when mode changes
+# Clear chat when mode changes
 if "last_mode" not in st.session_state:
     st.session_state.last_mode = mode
 
 if st.session_state.last_mode != mode:
     st.session_state.messages = []
-    set_to_local_storage("chillbro_chat", "[]")
     st.session_state.last_mode = mode
     st.rerun()
 
-# Show chat
+# Show messages
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
@@ -198,9 +209,6 @@ if user_input:
             reply = response.choices[0].message.content
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
-
-            # Save to Local Storage
-            set_to_local_storage("chillbro_chat", json.dumps(st.session_state.messages))
 
             # Voice
             voice_id = VOICE_OPTIONS[selected_voice]
