@@ -46,31 +46,97 @@ if not st.session_state.opened:
     st.session_state.opened = True
     st.rerun()
 
+# ---------- Maximum Stable Voices ----------
+VOICE_OPTIONS = {
+    "Hindi": "hi-IN-MadhurNeural",
+    "English (US)": "en-US-GuyNeural",
+    "English (UK)": "en-GB-RyanNeural",
+    "English (India)": "en-IN-PrabhatNeural",
+    "English (Australia)": "en-AU-WilliamNeural",
+    "Spanish (Spain)": "es-ES-AlvaroNeural",
+    "Spanish (Mexico)": "es-MX-JorgeNeural",
+    "French": "fr-FR-HenriNeural",
+    "German": "de-DE-ConradNeural",
+    "Arabic": "ar-SA-HamedNeural",
+    "Portuguese (Brazil)": "pt-BR-AntonioNeural",
+    "Portuguese (Portugal)": "pt-PT-DuarteNeural",
+    "Italian": "it-IT-DiegoNeural",
+    "Japanese": "ja-JP-KeitaNeural",
+    "Korean": "ko-KR-InJoonNeural",
+    "Chinese (Mandarin)": "zh-CN-YunxiNeural",
+    "Russian": "ru-RU-DmitryNeural",
+    "Turkish": "tr-TR-AhmetNeural",
+    "Dutch": "nl-NL-MaartenNeural",
+    "Polish": "pl-PL-MarekNeural",
+    "Indonesian": "id-ID-ArdiNeural",
+    "Vietnamese": "vi-VN-NamMinhNeural",
+    "Thai": "th-TH-NiwatNeural",
+    "Swedish": "sv-SE-MattiasNeural",
+    "Greek": "el-GR-NestorasNeural",
+    "Czech": "cs-CZ-AntoninNeural",
+    "Romanian": "ro-RO-EmilNeural",
+    "Hungarian": "hu-HU-TamasNeural",
+    "Finnish": "fi-FI-HarriNeural",
+    "Danish": "da-DK-JonNeural",
+    "Norwegian": "nb-NO-FinnNeural",
+    "Ukrainian": "uk-UA-OstapNeural",
+    "Hebrew": "he-IL-AvriNeural",
+    "Catalan": "ca-ES-EnricNeural",
+    "Croatian": "hr-HR-SreckoNeural",
+    "Slovak": "sk-SK-LukasNeural",
+    "Bulgarian": "bg-BG-BorislavNeural",
+    "Malay": "ms-MY-OsmanNeural",
+    "Filipino": "fil-PH-AngeloNeural",
+    "Urdu": "ur-PK-AsadNeural",
+    "Bengali": "bn-IN-BashkarNeural",
+    "Tamil": "ta-IN-ValluvarNeural",
+    "Telugu": "te-IN-MohanNeural",
+    "Marathi": "mr-IN-ManoharNeural",
+    "Gujarati": "gu-IN-NiranjanNeural",
+    "Kannada": "kn-IN-GaganNeural",
+    "Malayalam": "ml-IN-MidhunNeural",
+    "Punjabi": "pa-IN-VaaniNeural",
+    "Afrikaans": "af-ZA-WillemNeural",
+    "Swahili": "sw-KE-RafikiNeural",
+    "Irish": "ga-IE-ColmNeural",
+    "Welsh": "cy-GB-AledNeural",
+    "Basque": "eu-ES-AnderNeural",
+    "Galician": "gl-ES-SantiNeural",
+    "Icelandic": "is-IS-GunnarNeural",
+    "Latvian": "lv-LV-NilsNeural",
+    "Lithuanian": "lt-LT-LeonasNeural",
+    "Estonian": "et-EE-KertNeural",
+    "Slovenian": "sl-SI-RokNeural",
+    "Serbian": "sr-RS-NicholasNeural",
+    "Macedonian": "mk-MK-AleksandarNeural",
+    "Albanian": "sq-AL-IlirNeural",
+    "Georgian": "ka-GE-GiorgiNeural",
+    "Armenian": "hy-AM-DavitNeural",
+    "Azerbaijani": "az-AZ-BabekNeural",
+    "Kazakh": "kk-KZ-DauletNeural",
+    "Uzbek": "uz-UZ-SardorNeural",
+    "Mongolian": "mn-MN-BataaNeural"
+}
+
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
     
-    mode = st.radio(
-        "Choose Mode",
-        ["🔥 Toxic Mode", "💕 Love Mode"],
-        index=0
-    )
+    mode = st.radio("Choose Mode", ["🔥 Toxic Mode", "💕 Love Mode"], index=0)
+    
+    selected_voice = st.selectbox("Voice Language", list(VOICE_OPTIONS.keys()), index=0)
     
     st.markdown("---")
     
     with st.expander("🔒 Privacy Policy"):
         st.markdown("""
         **Privacy Policy for Chillbro**
-
         - Messages and voice are only used to generate replies
         - We do not store your chats permanently
         - We do not sell any data
         - Third-party services: Groq, Google Speech, Edge TTS
-
-        By using this app, you agree to this policy.
         """)
     
-    st.markdown("---")
     st.caption("For entertainment only")
 
 # ---------- System Prompts ----------
@@ -105,9 +171,8 @@ if "messages" not in st.session_state:
     st.session_state.messages = []
 
 st.title("😎 Chillbro")
-st.caption(f"Current Mode: {mode}")
+st.caption(f"Mode: {mode} | Voice: {selected_voice}")
 
-# Clear chat when mode changes
 if "last_mode" not in st.session_state:
     st.session_state.last_mode = mode
 
@@ -116,12 +181,10 @@ if st.session_state.last_mode != mode:
     st.session_state.last_mode = mode
     st.rerun()
 
-# Chat history
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ---------- Voice Input ----------
 st.write("Speak:")
 audio_bytes = audio_recorder(pause_threshold=1.5, sample_rate=16000)
 
@@ -138,12 +201,10 @@ if audio_bytes:
     except:
         st.error("Could not understand. Try again.")
 
-# ---------- Text Input ----------
 text_input = st.chat_input("Type in any language...")
 if text_input:
     user_input = text_input
 
-# ---------- Generate Reply ----------
 if user_input:
     st.session_state.messages.append({"role": "user", "content": user_input})
     
@@ -166,9 +227,10 @@ if user_input:
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
-            # Voice Output
+            voice_id = VOICE_OPTIONS[selected_voice]
+
             async def generate_voice():
-                communicate = edge_tts.Communicate(reply, "hi-IN-MadhurNeural")
+                communicate = edge_tts.Communicate(reply, voice_id)
                 audio_data = b""
                 async for chunk in communicate.stream():
                     if chunk["type"] == "audio":
@@ -180,4 +242,3 @@ if user_input:
 
         except Exception as e:
             st.error(f"Error: {e}")
-        
