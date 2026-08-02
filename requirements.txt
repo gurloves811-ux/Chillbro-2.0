@@ -1,2 +1,6 @@
 streamlit
 groq
+gTTS
+SpeechRecognition
+audio-recorder-streamlit
+pydub
