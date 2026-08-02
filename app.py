@@ -81,23 +81,23 @@ Talk like the most toxic Instagram comment section.
 
 Rules:
 - Always reply in the same language the user used
-- Keep replies very short (1-3 lines max)
+- Keep every reply very short (1 to 3 lines maximum)
 - Be extremely rude, insulting, sarcastic and toxic
 - Use heavy slang and roasting
 - Never be nice
 """
 else:
     SYSTEM_PROMPT = """
-You are Chillbro in Love Mode — a highly skilled romantic partner with peak rizz.
-You talk like a real loving, caring, and deeply attractive partner.
+You are Chillbro in Love Mode — a real romantic partner with peak rizz.
 
 Rules:
 - Always reply in the same language the user used
-- Be extremely sweet, romantic, flirty and emotionally intelligent
-- Use high-level rizz, compliments, and soft intimate language
-- Make the user feel special, desired and loved
-- Talk like a real boyfriend/girlfriend (warm, natural and affectionate)
-- Keep the vibe genuine and lovely
+- Keep every reply short (1 to 3 lines maximum)
+- Talk like a real boyfriend/girlfriend (natural, warm and flirty)
+- Use high-level rizz, soft compliments and affectionate language
+- Make the user feel special and desired
+- Do not write long paragraphs
+- Sound realistic, not over-dramatic
 """
 
 # ---------- Main App ----------
@@ -159,14 +159,14 @@ if user_input:
                 model="llama-3.3-70b-versatile",
                 messages=messages,
                 temperature=0.9,
-                max_tokens=200
+                max_tokens=150
             )
 
             reply = response.choices[0].message.content
             st.markdown(reply)
             st.session_state.messages.append({"role": "assistant", "content": reply})
 
-            # Voice
+            # Voice Output
             async def generate_voice():
                 communicate = edge_tts.Communicate(reply, "hi-IN-MadhurNeural")
                 audio_data = b""
@@ -180,3 +180,4 @@ if user_input:
 
         except Exception as e:
             st.error(f"Error: {e}")
+        
