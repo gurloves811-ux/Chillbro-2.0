@@ -76,12 +76,19 @@ if "toxic_messages" not in st.session_state:
     st.session_state.toxic_messages = []
 if "love_messages" not in st.session_state:
     st.session_state.love_messages = []
+if "knowledge_messages" not in st.session_state:
+    st.session_state.knowledge_messages = []
 
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
     
-    mode = st.radio("Choose Mode", ["🔥 Toxic Mode", "💕 Love Mode"], index=0)
+    mode = st.radio(
+        "Choose Mode",
+        ["🔥 Toxic Mode", "💕 Love Mode", "🧠 Knowledge Mode"],
+        index=0
+    )
+    
     selected_voice = st.selectbox("Voice Language", list(VOICE_OPTIONS.keys()), index=0)
     
     st.markdown("---")
@@ -90,12 +97,20 @@ with st.sidebar:
     if st.button("🗑️ Clear Current Chat", use_container_width=True):
         if mode == "🔥 Toxic Mode":
             st.session_state.toxic_messages = []
-        else:
+        elif mode == "💕 Love Mode":
             st.session_state.love_messages = []
+        else:
+            st.session_state.knowledge_messages = []
         st.rerun()
     
-    # Save current mode chat
-    current_messages = st.session_state.toxic_messages if mode == "🔥 Toxic Mode" else st.session_state.love_messages
+    # Select current messages
+    if mode == "🔥 Toxic Mode":
+        current_messages = st.session_state.toxic_messages
+    elif mode == "💕 Love Mode":
+        current_messages = st.session_state.love_messages
+    else:
+        current_messages = st.session_state.knowledge_messages
+    
     if len(current_messages) > 0:
         chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
         st.download_button(
@@ -112,8 +127,10 @@ with st.sidebar:
             loaded_messages = json.load(uploaded_file)
             if mode == "🔥 Toxic Mode":
                 st.session_state.toxic_messages = loaded_messages
-            else:
+            elif mode == "💕 Love Mode":
                 st.session_state.love_messages = loaded_messages
+            else:
+                st.session_state.knowledge_messages = loaded_messages
             st.success("Chat loaded!")
             time.sleep(0.5)
             st.rerun()
@@ -128,6 +145,25 @@ with st.sidebar:
         - Messages are only used to generate replies
         - We do not store your chats on any server
         - For entertainment only
+        """)
+    
+    with st.expander("Credits"):
+        st.markdown("""
+        **Chillbro**
+        
+        Created with ❤️
+        
+        **Powered by:**
+        - Groq AI
+        - Edge TTS
+        - Streamlit
+        
+        **Modes:**
+        - Toxic Mode
+        - Love Mode
+        - Knowledge Mode
+        
+        Made for entertainment & learning.
         """)
     
     st.caption("Each mode has separate chat")
@@ -146,7 +182,8 @@ Rules:
 - Never be nice
 """
     messages = st.session_state.toxic_messages
-else:
+
+elif mode == "💕 Love Mode":
     SYSTEM_PROMPT = """
 You are Chillbro in Love Mode — a real romantic partner with peak rizz.
 
@@ -159,6 +196,20 @@ Rules:
 - Sound realistic, not over-dramatic
 """
     messages = st.session_state.love_messages
+
+else:  # Knowledge Mode
+    SYSTEM_PROMPT = """
+You are Chillbro in Knowledge Mode — a smart, helpful, and intelligent AI assistant like ChatGPT, Grok, and Meta AI.
+
+Rules:
+- Always reply in the same language the user used
+- Be clear, accurate, and helpful
+- Explain things in a simple and easy-to-understand way
+- Give detailed answers when needed
+- Be friendly and professional
+- If you don't know something, say so honestly
+"""
+    messages = st.session_state.knowledge_messages
 
 # ---------- Main App ----------
 st.title("😎 Chillbro")
@@ -206,8 +257,8 @@ if user_input:
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=full_messages,
-                temperature=0.9,
-                max_tokens=150
+                temperature=0.7 if mode == "🧠 Knowledge Mode" else 0.9,
+                max_tokens=1024 if mode == "🧠 Knowledge Mode" else 150
             )
 
             reply = response.choices[0].message.content
