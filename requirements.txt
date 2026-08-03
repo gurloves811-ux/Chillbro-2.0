@@ -4,4 +4,3 @@ edge-tts
 SpeechRecognition
 audio-recorder-streamlit
 pydub
-streamlit-js-eval
