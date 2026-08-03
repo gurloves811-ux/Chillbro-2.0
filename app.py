@@ -8,8 +8,12 @@ from io import BytesIO
 import time
 import json
 from datetime import datetime
+import extra_streamlit_components as stx
 
 st.set_page_config(page_title="Chillbro", page_icon="😎", layout="centered", initial_sidebar_state="expanded")
+
+# ---------- Cookie Manager for Name ----------
+cookie_manager = stx.CookieManager(key="chillbro_cookie")
 
 # ---------- Opening Animation ----------
 if "opened" not in st.session_state:
@@ -47,13 +51,15 @@ if not st.session_state.opened:
     st.session_state.opened = True
     st.rerun()
 
-# ---------- Name Input ----------
+# ---------- Get saved name from cookie ----------
 if "username" not in st.session_state:
-    st.session_state.username = ""
+    saved_name = cookie_manager.get(cookie="chillbro_username")
+    st.session_state.username = saved_name if saved_name else ""
 
+# ---------- Name Input (Only One Time) ----------
 if st.session_state.username == "":
     st.markdown("<h2 style='text-align:center;'>😎 Welcome to Chillbro</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;'>Enter your name to continue</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Enter your name (only one time)</p>", unsafe_allow_html=True)
     
     with st.form("name_form"):
         name = st.text_input("Your Name", placeholder="Type your name...")
@@ -61,33 +67,78 @@ if st.session_state.username == "":
         
         if submit and name.strip() != "":
             st.session_state.username = name.strip()
+            cookie_manager.set("chillbro_username", name.strip(), expires_at=datetime(2030, 1, 1))
             st.rerun()
         elif submit:
             st.warning("Please enter your name")
     st.stop()
 
-# ---------- Languages ----------
+# ---------- 60+ Languages ----------
 VOICE_OPTIONS = {
     "Hindi": "hi-IN-MadhurNeural",
     "English (US)": "en-US-GuyNeural",
     "English (UK)": "en-GB-RyanNeural",
     "English (India)": "en-IN-PrabhatNeural",
+    "English (Australia)": "en-AU-WilliamNeural",
+    "Spanish (Spain)": "es-ES-AlvaroNeural",
     "Spanish (Mexico)": "es-MX-JorgeNeural",
     "French": "fr-FR-HenriNeural",
     "German": "de-DE-ConradNeural",
     "Arabic": "ar-SA-HamedNeural",
     "Portuguese (Brazil)": "pt-BR-AntonioNeural",
+    "Portuguese (Portugal)": "pt-PT-DuarteNeural",
     "Italian": "it-IT-DiegoNeural",
     "Japanese": "ja-JP-KeitaNeural",
     "Korean": "ko-KR-InJoonNeural",
     "Chinese (Mandarin)": "zh-CN-YunxiNeural",
     "Russian": "ru-RU-DmitryNeural",
     "Turkish": "tr-TR-AhmetNeural",
+    "Dutch": "nl-NL-MaartenNeural",
+    "Polish": "pl-PL-MarekNeural",
+    "Indonesian": "id-ID-ArdiNeural",
+    "Vietnamese": "vi-VN-NamMinhNeural",
+    "Thai": "th-TH-NiwatNeural",
+    "Swedish": "sv-SE-MattiasNeural",
+    "Greek": "el-GR-NestorasNeural",
+    "Czech": "cs-CZ-AntoninNeural",
+    "Romanian": "ro-RO-EmilNeural",
+    "Hungarian": "hu-HU-TamasNeural",
+    "Finnish": "fi-FI-HarriNeural",
+    "Danish": "da-DK-JonNeural",
+    "Norwegian": "nb-NO-FinnNeural",
+    "Ukrainian": "uk-UA-OstapNeural",
+    "Hebrew": "he-IL-AvriNeural",
+    "Catalan": "ca-ES-EnricNeural",
+    "Croatian": "hr-HR-SreckoNeural",
+    "Slovak": "sk-SK-LukasNeural",
+    "Bulgarian": "bg-BG-BorislavNeural",
+    "Malay": "ms-MY-OsmanNeural",
+    "Filipino": "fil-PH-AngeloNeural",
     "Urdu": "ur-PK-AsadNeural",
     "Bengali": "bn-IN-BashkarNeural",
     "Tamil": "ta-IN-ValluvarNeural",
     "Telugu": "te-IN-MohanNeural",
-    "Marathi": "mr-IN-ManoharNeural"
+    "Marathi": "mr-IN-ManoharNeural",
+    "Gujarati": "gu-IN-NiranjanNeural",
+    "Kannada": "kn-IN-GaganNeural",
+    "Malayalam": "ml-IN-MidhunNeural",
+    "Punjabi": "pa-IN-VaaniNeural",
+    "Afrikaans": "af-ZA-WillemNeural",
+    "Swahili": "sw-KE-RafikiNeural",
+    "Irish": "ga-IE-ColmNeural",
+    "Welsh": "cy-GB-AledNeural",
+    "Icelandic": "is-IS-GunnarNeural",
+    "Latvian": "lv-LV-NilsNeural",
+    "Lithuanian": "lt-LT-LeonasNeural",
+    "Estonian": "et-EE-KertNeural",
+    "Slovenian": "sl-SI-RokNeural",
+    "Serbian": "sr-RS-NicholasNeural",
+    "Albanian": "sq-AL-IlirNeural",
+    "Georgian": "ka-GE-GiorgiNeural",
+    "Armenian": "hy-AM-DavitNeural",
+    "Azerbaijani": "az-AZ-BabekNeural",
+    "Kazakh": "kk-KZ-DauletNeural",
+    "Uzbek": "uz-UZ-SardorNeural"
 }
 
 SPEECH_LANG_CODES = {
@@ -110,7 +161,11 @@ SPEECH_LANG_CODES = {
     "Bengali": "bn-IN",
     "Tamil": "ta-IN",
     "Telugu": "te-IN",
-    "Marathi": "mr-IN"
+    "Marathi": "mr-IN",
+    "Gujarati": "gu-IN",
+    "Indonesian": "id-ID",
+    "Vietnamese": "vi-VN",
+    "Thai": "th-TH"
 }
 
 # ---------- Initialize ----------
@@ -175,22 +230,21 @@ with st.sidebar:
         current_messages = st.session_state.music_messages
     
     if len(current_messages) > 0:
-        txt_content = f"Chillbro Chat\nUser: {st.session_state.username}\nMode: {mode}\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+        txt_content = f"Chillbro Chat\nUser: {st.session_state.username}\nMode: {mode}\n\n"
         for msg in current_messages:
             role = "You" if msg["role"] == "user" else "Chillbro"
             txt_content += f"{role}: {msg['content']}\n\n"
         
-        st.download_button("📄 Export as TXT", txt_content, "chillbro_chat.txt", "text/plain", use_container_width=True)
-        
-        chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
-        st.download_button("💾 Save JSON", chat_json, "chillbro_chat.json", "application/json", use_container_width=True)
+        st.download_button("📄 Export TXT", txt_content, "chillbro_chat.txt", "text/plain", use_container_width=True)
+        st.download_button("💾 Save JSON", json.dumps(current_messages, ensure_ascii=False, indent=2), "chillbro_chat.json", "application/json", use_container_width=True)
     
-    if st.button("🚪 Change Name", use_container_width=True):
+    if st.button("🚪 Reset Name", use_container_width=True):
         st.session_state.username = ""
+        cookie_manager.delete("chillbro_username")
         st.rerun()
 
     with st.expander("Credits"):
-        st.markdown("**Chillbro**\nToxic + Love + Knowledge + Music\nPowered by Groq")
+        st.markdown("**Chillbro**\n60+ Languages | 4 Modes\nPowered by Groq")
 
 # ---------- System Prompts ----------
 lang_instruction = f"You must always reply only in {selected_lang} language."
@@ -227,7 +281,6 @@ for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# Action Buttons
 if st.session_state.last_reply:
     col1, col2 = st.columns(2)
     with col1:
@@ -244,15 +297,7 @@ if st.session_state.last_reply:
 col1, col2 = st.columns([1, 5])
 
 with col1:
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#e74c3c",
-        neutral_color="#3498db",
-        icon_name="microphone",
-        icon_size="2x",
-        pause_threshold=1.5,
-        sample_rate=16000
-    )
+    audio_bytes = audio_recorder(text="", recording_color="#e74c3c", neutral_color="#3498db", icon_name="microphone", icon_size="2x", pause_threshold=1.5, sample_rate=16000)
 
 with col2:
     st.caption("Tap mic to speak")
