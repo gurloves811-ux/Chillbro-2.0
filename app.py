@@ -78,6 +78,8 @@ if "love_messages" not in st.session_state:
     st.session_state.love_messages = []
 if "knowledge_messages" not in st.session_state:
     st.session_state.knowledge_messages = []
+if "music_messages" not in st.session_state:
+    st.session_state.music_messages = []
 
 # ---------- Sidebar ----------
 with st.sidebar:
@@ -85,11 +87,26 @@ with st.sidebar:
     
     mode = st.radio(
         "Choose Mode",
-        ["🔥 Toxic Mode", "💕 Love Mode", "🧠 Knowledge Mode"],
+        ["🔥 Toxic Mode", "💕 Love Mode", "🧠 Knowledge Mode", "🎵 Music Mode"],
         index=0
     )
     
     selected_voice = st.selectbox("Voice Language", list(VOICE_OPTIONS.keys()), index=0)
+    
+    st.markdown("---")
+    st.subheader("🎤 Voice Input")
+    st.caption("Tap to speak")
+    
+    # Small fixed mic in sidebar
+    audio_bytes = audio_recorder(
+        text="",
+        recording_color="#e74c3c",
+        neutral_color="#3498db",
+        icon_name="microphone",
+        icon_size="2x",
+        pause_threshold=1.5,
+        sample_rate=16000
+    )
     
     st.markdown("---")
     st.subheader("Chat History")
@@ -99,17 +116,20 @@ with st.sidebar:
             st.session_state.toxic_messages = []
         elif mode == "💕 Love Mode":
             st.session_state.love_messages = []
-        else:
+        elif mode == "🧠 Knowledge Mode":
             st.session_state.knowledge_messages = []
+        else:
+            st.session_state.music_messages = []
         st.rerun()
     
-    # Select current messages
     if mode == "🔥 Toxic Mode":
         current_messages = st.session_state.toxic_messages
     elif mode == "💕 Love Mode":
         current_messages = st.session_state.love_messages
-    else:
+    elif mode == "🧠 Knowledge Mode":
         current_messages = st.session_state.knowledge_messages
+    else:
+        current_messages = st.session_state.music_messages
     
     if len(current_messages) > 0:
         chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
@@ -129,8 +149,10 @@ with st.sidebar:
                 st.session_state.toxic_messages = loaded_messages
             elif mode == "💕 Love Mode":
                 st.session_state.love_messages = loaded_messages
-            else:
+            elif mode == "🧠 Knowledge Mode":
                 st.session_state.knowledge_messages = loaded_messages
+            else:
+                st.session_state.music_messages = loaded_messages
             st.success("Chat loaded!")
             time.sleep(0.5)
             st.rerun()
@@ -162,8 +184,7 @@ with st.sidebar:
         - Toxic Mode
         - Love Mode
         - Knowledge Mode
-        
-        Made for entertainment & learning.
+        - Music Mode
         """)
     
     st.caption("Each mode has separate chat")
@@ -197,7 +218,7 @@ Rules:
 """
     messages = st.session_state.love_messages
 
-else:  # Knowledge Mode
+elif mode == "🧠 Knowledge Mode":
     SYSTEM_PROMPT = """
 You are Chillbro in Knowledge Mode — a smart, helpful, and intelligent AI assistant like ChatGPT, Grok, and Meta AI.
 
@@ -207,27 +228,36 @@ Rules:
 - Explain things in a simple and easy-to-understand way
 - Give detailed answers when needed
 - Be friendly and professional
-- If you don't know something, say so honestly
 """
     messages = st.session_state.knowledge_messages
+
+else:  # Music Mode
+    SYSTEM_PROMPT = """
+You are Chillbro in Music Mode — an expert music recommendation AI.
+
+Rules:
+- Always reply in the same language the user used
+- Suggest playlists and songs based on mood, genre, activity, or language
+- Give good mix of popular + hidden gem songs
+- Suggest Spotify/YouTube style playlists
+- Ask about mood or preference if needed
+- Keep recommendations clear and useful
+"""
+    messages = st.session_state.music_messages
 
 # ---------- Main App ----------
 st.title("😎 Chillbro")
 st.caption(f"Mode: {mode} | Voice: {selected_voice}")
 
-# Show messages of current mode
+# Show messages
 for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ---------- Voice Input ----------
-st.write("Speak:")
-audio_bytes = audio_recorder(pause_threshold=1.5, sample_rate=16000)
-
+# ---------- Process Voice Input ----------
 user_input = None
 
 if audio_bytes:
-    st.audio(audio_bytes, format="audio/wav")
     try:
         recognizer = sr.Recognizer()
         with sr.AudioFile(BytesIO(audio_bytes)) as source:
@@ -254,18 +284,21 @@ if user_input:
             client = Groq(api_key=st.secrets["GROQ_API_KEY"])
             full_messages = [{"role": "system", "content": SYSTEM_PROMPT}] + messages
 
+            max_tokens = 1024 if mode in ["🧠 Knowledge Mode", "🎵 Music Mode"] else 150
+            temperature = 0.7 if mode in ["🧠 Knowledge Mode", "🎵 Music Mode"] else 0.9
+
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=full_messages,
-                temperature=0.7 if mode == "🧠 Knowledge Mode" else 0.9,
-                max_tokens=1024 if mode == "🧠 Knowledge Mode" else 150
+                temperature=temperature,
+                max_tokens=max_tokens
             )
 
             reply = response.choices[0].message.content
             st.markdown(reply)
             messages.append({"role": "assistant", "content": reply})
 
-            # Voice
+            # Voice Output
             voice_id = VOICE_OPTIONS[selected_voice]
 
             async def generate_voice():
@@ -280,4 +313,4 @@ if user_input:
             st.audio(audio_bytes, format="audio/mp3")
 
         except Exception as e:
-            st.error(f"Error: {e}")
+            st.error(f"Error: {e}")     
