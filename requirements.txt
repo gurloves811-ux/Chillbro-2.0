@@ -4,3 +4,4 @@ edge-tts
 SpeechRecognition
 audio-recorder-streamlit
 pydub
+extra-streamlit-components
