@@ -42,12 +42,11 @@ if not st.session_state.opened:
         <div class="big-title">😎 Chillbro</div>
         <div class="subtitle">Loading...</div>
     """, unsafe_allow_html=True)
-    
     time.sleep(2.2)
     st.session_state.opened = True
     st.rerun()
 
-# ---------- Voices ----------
+# ---------- Languages ----------
 VOICE_OPTIONS = {
     "Hindi": "hi-IN-MadhurNeural",
     "English (US)": "en-US-GuyNeural",
@@ -61,25 +60,63 @@ VOICE_OPTIONS = {
     "Italian": "it-IT-DiegoNeural",
     "Japanese": "ja-JP-KeitaNeural",
     "Korean": "ko-KR-InJoonNeural",
-    "Chinese": "zh-CN-YunxiNeural",
+    "Chinese (Mandarin)": "zh-CN-YunxiNeural",
     "Russian": "ru-RU-DmitryNeural",
     "Turkish": "tr-TR-AhmetNeural",
     "Urdu": "ur-PK-AsadNeural",
     "Bengali": "bn-IN-BashkarNeural",
     "Tamil": "ta-IN-ValluvarNeural",
     "Telugu": "te-IN-MohanNeural",
-    "Marathi": "mr-IN-ManoharNeural"
+    "Marathi": "mr-IN-ManoharNeural",
+    "Gujarati": "gu-IN-NiranjanNeural",
+    "Indonesian": "id-ID-ArdiNeural",
+    "Vietnamese": "vi-VN-NamMinhNeural",
+    "Thai": "th-TH-NiwatNeural",
+    "Dutch": "nl-NL-MaartenNeural",
+    "Polish": "pl-PL-MarekNeural",
+    "Swedish": "sv-SE-MattiasNeural",
+    "Greek": "el-GR-NestorasNeural",
+    "Czech": "cs-CZ-AntoninNeural",
+    "Romanian": "ro-RO-EmilNeural",
+    "Hungarian": "hu-HU-TamasNeural",
+    "Finnish": "fi-FI-HarriNeural",
+    "Ukrainian": "uk-UA-OstapNeural",
+    "Hebrew": "he-IL-AvriNeural",
+    "Malay": "ms-MY-OsmanNeural",
+    "Filipino": "fil-PH-AngeloNeural"
 }
 
-# ---------- Initialize separate chats ----------
-if "toxic_messages" not in st.session_state:
-    st.session_state.toxic_messages = []
-if "love_messages" not in st.session_state:
-    st.session_state.love_messages = []
-if "knowledge_messages" not in st.session_state:
-    st.session_state.knowledge_messages = []
-if "music_messages" not in st.session_state:
-    st.session_state.music_messages = []
+SPEECH_LANG_CODES = {
+    "Hindi": "hi-IN",
+    "English (US)": "en-US",
+    "English (UK)": "en-GB",
+    "English (India)": "en-IN",
+    "Spanish (Mexico)": "es-MX",
+    "French": "fr-FR",
+    "German": "de-DE",
+    "Arabic": "ar-SA",
+    "Portuguese (Brazil)": "pt-BR",
+    "Italian": "it-IT",
+    "Japanese": "ja-JP",
+    "Korean": "ko-KR",
+    "Chinese (Mandarin)": "zh-CN",
+    "Russian": "ru-RU",
+    "Turkish": "tr-TR",
+    "Urdu": "ur-PK",
+    "Bengali": "bn-IN",
+    "Tamil": "ta-IN",
+    "Telugu": "te-IN",
+    "Marathi": "mr-IN",
+    "Gujarati": "gu-IN",
+    "Indonesian": "id-ID",
+    "Vietnamese": "vi-VN",
+    "Thai": "th-TH"
+}
+
+# ---------- Initialize chats ----------
+for key in ["toxic_messages", "love_messages", "knowledge_messages", "music_messages"]:
+    if key not in st.session_state:
+        st.session_state[key] = []
 
 # ---------- Sidebar ----------
 with st.sidebar:
@@ -91,22 +128,7 @@ with st.sidebar:
         index=0
     )
     
-    selected_voice = st.selectbox("Voice Language", list(VOICE_OPTIONS.keys()), index=0)
-    
-    st.markdown("---")
-    st.subheader("🎤 Voice Input")
-    st.caption("Tap to speak")
-    
-    # Small fixed mic in sidebar
-    audio_bytes = audio_recorder(
-        text="",
-        recording_color="#e74c3c",
-        neutral_color="#3498db",
-        icon_name="microphone",
-        icon_size="2x",
-        pause_threshold=1.5,
-        sample_rate=16000
-    )
+    selected_lang = st.selectbox("Select Language", list(VOICE_OPTIONS.keys()), index=0)
     
     st.markdown("---")
     st.subheader("Chat History")
@@ -133,128 +155,81 @@ with st.sidebar:
     
     if len(current_messages) > 0:
         chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
-        st.download_button(
-            label="💾 Save Current Chat",
-            data=chat_json,
-            file_name="chillbro_chat.json",
-            mime="application/json",
-            use_container_width=True
-        )
+        st.download_button("💾 Save Chat", chat_json, "chillbro_chat.json", "application/json", use_container_width=True)
     
     uploaded_file = st.file_uploader("📂 Load Chat", type="json")
-    if uploaded_file is not None:
+    if uploaded_file:
         try:
-            loaded_messages = json.load(uploaded_file)
+            loaded = json.load(uploaded_file)
             if mode == "🔥 Toxic Mode":
-                st.session_state.toxic_messages = loaded_messages
+                st.session_state.toxic_messages = loaded
             elif mode == "💕 Love Mode":
-                st.session_state.love_messages = loaded_messages
+                st.session_state.love_messages = loaded
             elif mode == "🧠 Knowledge Mode":
-                st.session_state.knowledge_messages = loaded_messages
+                st.session_state.knowledge_messages = loaded
             else:
-                st.session_state.music_messages = loaded_messages
+                st.session_state.music_messages = loaded
             st.success("Chat loaded!")
-            time.sleep(0.5)
             st.rerun()
         except:
-            st.error("Failed to load file.")
-    
-    st.markdown("---")
-    
-    with st.expander("🔒 Privacy Policy"):
-        st.markdown("""
-        **Privacy Policy**
-        - Messages are only used to generate replies
-        - We do not store your chats on any server
-        - For entertainment only
-        """)
-    
+            st.error("Failed to load")
+
     with st.expander("Credits"):
-        st.markdown("""
-        **Chillbro**
-        
-        Created with ❤️
-        
-        **Powered by:**
-        - Groq AI
-        - Edge TTS
-        - Streamlit
-        
-        **Modes:**
-        - Toxic Mode
-        - Love Mode
-        - Knowledge Mode
-        - Music Mode
-        """)
-    
-    st.caption("Each mode has separate chat")
+        st.markdown("**Chillbro**\nToxic + Love + Knowledge + Music Mode\nPowered by Groq + Edge TTS")
 
-# ---------- System Prompts ----------
+# ---------- System Prompts with Forced Language ----------
+lang_instruction = f"You must always reply only in {selected_lang} language."
+
 if mode == "🔥 Toxic Mode":
-    SYSTEM_PROMPT = """
-You are Chillbro in Toxic Mode — extremely toxic, savage and roasting AI.
-Talk like the most toxic Instagram comment section.
-
-Rules:
-- Always reply in the same language the user used
-- Keep every reply very short (1 to 3 lines maximum)
-- Be extremely rude, insulting, sarcastic and toxic
-- Use heavy slang and roasting
-- Never be nice
-"""
+    SYSTEM_PROMPT = f"""You are Chillbro in Toxic Mode — extremely toxic and savage.
+{lang_instruction}
+Rules: Keep replies very short (1-3 lines). Be rude, insulting, roasting. Never be nice."""
     messages = st.session_state.toxic_messages
 
 elif mode == "💕 Love Mode":
-    SYSTEM_PROMPT = """
-You are Chillbro in Love Mode — a real romantic partner with peak rizz.
-
-Rules:
-- Always reply in the same language the user used
-- Keep every reply short (1 to 3 lines maximum)
-- Talk like a real boyfriend/girlfriend (natural, warm and flirty)
-- Use high-level rizz, soft compliments and affectionate language
-- Make the user feel special and desired
-- Sound realistic, not over-dramatic
-"""
+    SYSTEM_PROMPT = f"""You are Chillbro in Love Mode — a real romantic partner with peak rizz.
+{lang_instruction}
+Rules: Keep replies short (1-3 lines). Be warm, flirty and affectionate like a real partner."""
     messages = st.session_state.love_messages
 
 elif mode == "🧠 Knowledge Mode":
-    SYSTEM_PROMPT = """
-You are Chillbro in Knowledge Mode — a smart, helpful, and intelligent AI assistant like ChatGPT, Grok, and Meta AI.
-
-Rules:
-- Always reply in the same language the user used
-- Be clear, accurate, and helpful
-- Explain things in a simple and easy-to-understand way
-- Give detailed answers when needed
-- Be friendly and professional
-"""
+    SYSTEM_PROMPT = f"""You are Chillbro in Knowledge Mode — a smart helpful AI like ChatGPT and Grok.
+{lang_instruction}
+Rules: Be clear, accurate and helpful. Explain simply."""
     messages = st.session_state.knowledge_messages
 
-else:  # Music Mode
-    SYSTEM_PROMPT = """
-You are Chillbro in Music Mode — an expert music recommendation AI.
-
-Rules:
-- Always reply in the same language the user used
-- Suggest playlists and songs based on mood, genre, activity, or language
-- Give good mix of popular + hidden gem songs
-- Suggest Spotify/YouTube style playlists
-- Ask about mood or preference if needed
-- Keep recommendations clear and useful
-"""
+else:
+    SYSTEM_PROMPT = f"""You are Chillbro in Music Mode — expert music recommendation AI.
+{lang_instruction}
+Rules: Suggest playlists and songs based on mood, genre or activity."""
     messages = st.session_state.music_messages
 
-# ---------- Main App ----------
+# ---------- Main ----------
 st.title("😎 Chillbro")
-st.caption(f"Mode: {mode} | Voice: {selected_voice}")
+st.caption(f"Mode: {mode} | Language: {selected_lang}")
 
-# Show messages
 for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ---------- Process Voice Input ----------
+# ---------- Mic + Input ----------
+st.markdown("---")
+col1, col2 = st.columns([1, 5])
+
+with col1:
+    audio_bytes = audio_recorder(
+        text="",
+        recording_color="#e74c3c",
+        neutral_color="#3498db",
+        icon_name="microphone",
+        icon_size="2x",
+        pause_threshold=1.5,
+        sample_rate=16000
+    )
+
+with col2:
+    st.caption("Tap mic to speak")
+
 user_input = None
 
 if audio_bytes:
@@ -262,20 +237,19 @@ if audio_bytes:
         recognizer = sr.Recognizer()
         with sr.AudioFile(BytesIO(audio_bytes)) as source:
             audio_data = recognizer.record(source)
-            user_input = recognizer.recognize_google(audio_data, language="hi-IN")
+            lang_code = SPEECH_LANG_CODES.get(selected_lang, "en-US")
+            user_input = recognizer.recognize_google(audio_data, language=lang_code)
             st.success(f"You said: {user_input}")
     except:
         st.error("Could not understand. Try again.")
 
-# ---------- Text Input ----------
-text_input = st.chat_input("Type in any language...")
+text_input = st.chat_input(f"Type in {selected_lang}...")
 if text_input:
     user_input = text_input
 
 # ---------- Generate Reply ----------
 if user_input:
     messages.append({"role": "user", "content": user_input})
-    
     with st.chat_message("user"):
         st.markdown(user_input)
 
@@ -298,8 +272,8 @@ if user_input:
             st.markdown(reply)
             messages.append({"role": "assistant", "content": reply})
 
-            # Voice Output
-            voice_id = VOICE_OPTIONS[selected_voice]
+            # Voice in selected language
+            voice_id = VOICE_OPTIONS[selected_lang]
 
             async def generate_voice():
                 communicate = edge_tts.Communicate(reply, voice_id)
@@ -313,4 +287,4 @@ if user_input:
             st.audio(audio_bytes, format="audio/mp3")
 
         except Exception as e:
-            st.error(f"Error: {e}")     
+            st.error(f"Error: {e}")
