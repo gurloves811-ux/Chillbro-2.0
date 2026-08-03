@@ -42,9 +42,29 @@ if not st.session_state.opened:
         <div class="big-title">😎 Chillbro</div>
         <div class="subtitle">Loading...</div>
     """, unsafe_allow_html=True)
-    time.sleep(2.2)
+    time.sleep(2.0)
     st.session_state.opened = True
     st.rerun()
+
+# ---------- Name Login ----------
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
+if st.session_state.username == "":
+    st.markdown("<h2 style='text-align:center;'>😎 Welcome to Chillbro</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Enter your name to continue</p>", unsafe_allow_html=True)
+    
+    with st.form("name_form"):
+        name = st.text_input("Your Name", placeholder="Type your name...")
+        submit = st.form_submit_button("Continue", use_container_width=True)
+        
+        if submit:
+            if name.strip() != "":
+                st.session_state.username = name.strip()
+                st.rerun()
+            else:
+                st.warning("Please enter your name")
+    st.stop()
 
 # ---------- Languages ----------
 VOICE_OPTIONS = {
@@ -71,19 +91,7 @@ VOICE_OPTIONS = {
     "Gujarati": "gu-IN-NiranjanNeural",
     "Indonesian": "id-ID-ArdiNeural",
     "Vietnamese": "vi-VN-NamMinhNeural",
-    "Thai": "th-TH-NiwatNeural",
-    "Dutch": "nl-NL-MaartenNeural",
-    "Polish": "pl-PL-MarekNeural",
-    "Swedish": "sv-SE-MattiasNeural",
-    "Greek": "el-GR-NestorasNeural",
-    "Czech": "cs-CZ-AntoninNeural",
-    "Romanian": "ro-RO-EmilNeural",
-    "Hungarian": "hu-HU-TamasNeural",
-    "Finnish": "fi-FI-HarriNeural",
-    "Ukrainian": "uk-UA-OstapNeural",
-    "Hebrew": "he-IL-AvriNeural",
-    "Malay": "ms-MY-OsmanNeural",
-    "Filipino": "fil-PH-AngeloNeural"
+    "Thai": "th-TH-NiwatNeural"
 }
 
 SPEECH_LANG_CODES = {
@@ -106,11 +114,7 @@ SPEECH_LANG_CODES = {
     "Bengali": "bn-IN",
     "Tamil": "ta-IN",
     "Telugu": "te-IN",
-    "Marathi": "mr-IN",
-    "Gujarati": "gu-IN",
-    "Indonesian": "id-ID",
-    "Vietnamese": "vi-VN",
-    "Thai": "th-TH"
+    "Marathi": "mr-IN"
 }
 
 # ---------- Initialize chats ----------
@@ -121,6 +125,7 @@ for key in ["toxic_messages", "love_messages", "knowledge_messages", "music_mess
 # ---------- Sidebar ----------
 with st.sidebar:
     st.title("😎 Chillbro")
+    st.markdown(f"**Hello, {st.session_state.username}!**")
     
     mode = st.radio(
         "Choose Mode",
@@ -157,27 +162,14 @@ with st.sidebar:
         chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
         st.download_button("💾 Save Chat", chat_json, "chillbro_chat.json", "application/json", use_container_width=True)
     
-    uploaded_file = st.file_uploader("📂 Load Chat", type="json")
-    if uploaded_file:
-        try:
-            loaded = json.load(uploaded_file)
-            if mode == "🔥 Toxic Mode":
-                st.session_state.toxic_messages = loaded
-            elif mode == "💕 Love Mode":
-                st.session_state.love_messages = loaded
-            elif mode == "🧠 Knowledge Mode":
-                st.session_state.knowledge_messages = loaded
-            else:
-                st.session_state.music_messages = loaded
-            st.success("Chat loaded!")
-            st.rerun()
-        except:
-            st.error("Failed to load")
+    if st.button("🚪 Change Name", use_container_width=True):
+        st.session_state.username = ""
+        st.rerun()
 
     with st.expander("Credits"):
-        st.markdown("**Chillbro**\nToxic + Love + Knowledge + Music Mode\nPowered by Groq + Edge TTS")
+        st.markdown("**Chillbro**\nMade for entertainment")
 
-# ---------- System Prompts with Forced Language ----------
+# ---------- System Prompts ----------
 lang_instruction = f"You must always reply only in {selected_lang} language."
 
 if mode == "🔥 Toxic Mode":
@@ -195,7 +187,7 @@ Rules: Keep replies short (1-3 lines). Be warm, flirty and affectionate like a r
 elif mode == "🧠 Knowledge Mode":
     SYSTEM_PROMPT = f"""You are Chillbro in Knowledge Mode — a smart helpful AI like ChatGPT and Grok.
 {lang_instruction}
-Rules: Be clear, accurate and helpful. Explain simply."""
+Rules: Be clear, accurate and helpful."""
     messages = st.session_state.knowledge_messages
 
 else:
@@ -205,8 +197,8 @@ Rules: Suggest playlists and songs based on mood, genre or activity."""
     messages = st.session_state.music_messages
 
 # ---------- Main ----------
-st.title("😎 Chillbro")
-st.caption(f"Mode: {mode} | Language: {selected_lang}")
+st.title(f"😎 Chillbro")
+st.caption(f"Hello {st.session_state.username} | Mode: {mode} | Language: {selected_lang}")
 
 for message in messages:
     with st.chat_message(message["role"]):
@@ -243,7 +235,7 @@ if audio_bytes:
     except:
         st.error("Could not understand. Try again.")
 
-text_input = st.chat_input(f"Type in {selected_lang}...")
+text_input = st.chat_input(f"Type something...")
 if text_input:
     user_input = text_input
 
@@ -272,7 +264,6 @@ if user_input:
             st.markdown(reply)
             messages.append({"role": "assistant", "content": reply})
 
-            # Voice in selected language
             voice_id = VOICE_OPTIONS[selected_lang]
 
             async def generate_voice():
