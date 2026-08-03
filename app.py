@@ -8,18 +8,8 @@ from io import BytesIO
 import time
 import json
 from datetime import datetime
-from streamlit_js_eval import get_from_local_storage, set_to_local_storage
 
 st.set_page_config(page_title="Chillbro", page_icon="😎", layout="centered", initial_sidebar_state="expanded")
-
-# ---------- Load saved name ----------
-if "username" not in st.session_state:
-    saved_name = get_from_local_storage("chillbro_username")
-    st.session_state.username = saved_name if saved_name else ""
-
-# ---------- Theme ----------
-if "dark_mode" not in st.session_state:
-    st.session_state.dark_mode = True
 
 # ---------- Opening Animation ----------
 if "opened" not in st.session_state:
@@ -57,10 +47,13 @@ if not st.session_state.opened:
     st.session_state.opened = True
     st.rerun()
 
-# ---------- Name Input (Only First Time) ----------
+# ---------- Name Input ----------
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
 if st.session_state.username == "":
     st.markdown("<h2 style='text-align:center;'>😎 Welcome to Chillbro</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align:center;'>Enter your name (only one time)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Enter your name to continue</p>", unsafe_allow_html=True)
     
     with st.form("name_form"):
         name = st.text_input("Your Name", placeholder="Type your name...")
@@ -68,7 +61,6 @@ if st.session_state.username == "":
         
         if submit and name.strip() != "":
             st.session_state.username = name.strip()
-            set_to_local_storage("chillbro_username", name.strip())
             st.rerun()
         elif submit:
             st.warning("Please enter your name")
@@ -128,6 +120,10 @@ for key in ["toxic_messages", "love_messages", "knowledge_messages", "music_mess
 
 if "last_reply" not in st.session_state:
     st.session_state.last_reply = ""
+if "confirm_clear" not in st.session_state:
+    st.session_state.confirm_clear = False
+if "regenerate" not in st.session_state:
+    st.session_state.regenerate = False
 
 # ---------- Sidebar ----------
 with st.sidebar:
@@ -142,20 +138,14 @@ with st.sidebar:
     
     selected_lang = st.selectbox("Language", list(VOICE_OPTIONS.keys()), index=0)
     
-    # Creativity Slider
     temperature = st.slider("Creativity", 0.1, 1.3, 0.9, 0.1)
-    
-    # Dark Mode
-    dark_mode = st.toggle("Dark Mode", value=st.session_state.dark_mode)
-    st.session_state.dark_mode = dark_mode
     
     st.markdown("---")
     
-    # Clear with confirmation
     if st.button("🗑️ Clear Current Chat", use_container_width=True):
         st.session_state.confirm_clear = True
     
-    if st.session_state.get("confirm_clear", False):
+    if st.session_state.confirm_clear:
         st.warning("Are you sure?")
         col1, col2 = st.columns(2)
         with col1:
@@ -175,7 +165,6 @@ with st.sidebar:
                 st.session_state.confirm_clear = False
                 st.rerun()
     
-    # Export Chat
     if mode == "🔥 Toxic Mode":
         current_messages = st.session_state.toxic_messages
     elif mode == "💕 Love Mode":
@@ -186,25 +175,22 @@ with st.sidebar:
         current_messages = st.session_state.music_messages
     
     if len(current_messages) > 0:
-        # Export as TXT
-        txt_content = f"Chillbro Chat - {st.session_state.username}\nMode: {mode}\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
+        txt_content = f"Chillbro Chat\nUser: {st.session_state.username}\nMode: {mode}\nDate: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n\n"
         for msg in current_messages:
             role = "You" if msg["role"] == "user" else "Chillbro"
             txt_content += f"{role}: {msg['content']}\n\n"
         
         st.download_button("📄 Export as TXT", txt_content, "chillbro_chat.txt", "text/plain", use_container_width=True)
         
-        # Export as JSON
         chat_json = json.dumps(current_messages, ensure_ascii=False, indent=2)
         st.download_button("💾 Save JSON", chat_json, "chillbro_chat.json", "application/json", use_container_width=True)
     
-    if st.button("🚪 Reset Name", use_container_width=True):
+    if st.button("🚪 Change Name", use_container_width=True):
         st.session_state.username = ""
-        set_to_local_storage("chillbro_username", "")
         st.rerun()
 
     with st.expander("Credits"):
-        st.markdown("**Chillbro**\nMultiple AI Modes + Voice\nPowered by Groq")
+        st.markdown("**Chillbro**\nToxic + Love + Knowledge + Music\nPowered by Groq")
 
 # ---------- System Prompts ----------
 lang_instruction = f"You must always reply only in {selected_lang} language."
@@ -237,22 +223,20 @@ Rules: Suggest playlists based on mood and genre."""
 st.title("😎 Chillbro")
 st.caption(f"Hello {st.session_state.username}  |  {mode}  |  {selected_lang}")
 
-# Show messages
 for message in messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
 
-# ---------- Action Buttons ----------
+# Action Buttons
 if st.session_state.last_reply:
-    col1, col2, col3 = st.columns(3)
+    col1, col2 = st.columns(2)
     with col1:
-        if st.button("📋 Copy Last Reply"):
-            st.code(st.session_state.last_reply, language=None)
-            st.success("Copied! (Select & copy manually)")
+        if st.button("📋 Copy Last Reply", use_container_width=True):
+            st.code(st.session_state.last_reply)
     with col2:
-        if st.button("🔄 Regenerate"):
-            if len(messages) >= 2:
-                messages.pop()  # remove last AI reply
+        if st.button("🔄 Regenerate", use_container_width=True):
+            if len(messages) >= 2 and messages[-1]["role"] == "assistant":
+                messages.pop()
                 st.session_state.regenerate = True
                 st.rerun()
 
@@ -290,8 +274,7 @@ text_input = st.chat_input("Type something...")
 if text_input:
     user_input = text_input
 
-# Handle Regenerate
-if st.session_state.get("regenerate", False):
+if st.session_state.regenerate:
     st.session_state.regenerate = False
     if messages and messages[-1]["role"] == "user":
         user_input = messages[-1]["content"]
@@ -322,7 +305,6 @@ if user_input:
             messages.append({"role": "assistant", "content": reply})
             st.session_state.last_reply = reply
 
-            # Voice
             voice_id = VOICE_OPTIONS[selected_lang]
 
             async def generate_voice():
